@@ -1,122 +1,173 @@
 @echo off
-title 🎣 Juego de Pesca - CMD (versión estable final)
-setlocal enabledelayedexpansion
+setlocal EnableDelayedExpansion
+title 🎣 Pesca Aventura
+color 0A
 
-:inicio
+:: Lista de peces (20 especies)
+set "peces=Trucha_arcoíris Carpa_dorada Pez_gato Tiburón_azul Pez_espada Pez_globo Dorado Atún_rojo Salmón_rosado Bagre Lenguado Mero Pez_loro Robalo Pez_payaso Esturión Pez_ángel Bacalao Pez_león Perca"
+
+:: Dibujos ASCII
+set "ascii_Trucha_arcoíris=><(((°>"
+set "ascii_Carpa_dorada=<º)))><"
+set "ascii_Pez_gato=(=^･ω･^=)"
+set "ascii_Tiburón_azul=^\/^   ^\/^"
+set "ascii_Pez_espada=>-)))))o>"
+set "ascii_Pez_globo=<°)))o<"
+set "ascii_Dorado=><(((º>"
+set "ascii_Atún_rojo=><((((*>"
+set "ascii_Salmón_rosado=><(((º>"
+set "ascii_Bagre=<º)))o>"
+set "ascii_Lenguado=<·)))><"
+set "ascii_Mero=<º)))#>"
+set "ascii_Pez_loro=<°)))–>"
+set "ascii_Robalo=><(((#>"
+set "ascii_Pez_payaso=<º)))<>"
+set "ascii_Esturión=><(((≡>"
+set "ascii_Pez_ángel=><((*>"
+set "ascii_Bacalao=><(((°>"
+set "ascii_Pez_león=><(((π>"
+set "ascii_Perca=><(((°º>"
+
+:menu
 cls
-echo ===============================
-echo       🎣 JUEGO DE PESCA
-echo ===============================
+echo ============================================
+echo        🎣 Bienvenido al Juego de Pesca
+echo ============================================
 echo.
-echo Espera a que pique el pez...
-echo No pulses R antes de tiempo o el hilo se romperá.
+echo  [1] Comenzar partida
+echo  [2] Salir
 echo.
-timeout /t 2 >nul
+set /p "opcion=Selecciona una opción: "
+if "%opcion%"=="1" goto jugar
+if "%opcion%"=="2" exit /b
+goto menu
 
-:: --- ESPERA LARGA (PICADA) ---
-set /a wait_picar=%random% %% 16 + 5
-set /a segundos_pasados=0
-
-:espera_picar
-set /a segundos_pasados+=1
-choice /C RN /N /T 1 /D N >nul
-set choice_error=%errorlevel%
-
-if %choice_error%==1 (
-    echo 💥 El pez ha roto el hilo por impaciencia.
-    timeout /t 2 >nul
-    goto inicio
-)
-
-if %segundos_pasados% GEQ %wait_picar% goto picado
-goto espera_picar
-
-:picado
+:jugar
 cls
-echo 🐟 ¡Ha picado! Pulsa R para recoger el hilo.
-set /a tiempo_limite=%wait_picar%
-set /a contador=0
+echo Esperando a que piquen...
+echo (No pulses nada todavía)
+echo.
 
-:reaccion
-set /a contador+=1
-choice /C RN /N /T 1 /D N >nul
-set choice_error=%errorlevel%
-
-if %choice_error%==1 (
-    echo ⬆️  ¡Buen reflejo!
+:: Espera larga aleatoria (5–20 s)
+set /a esperaLarga=%random% %% 16 + 5
+for /l %%i in (1,1,%esperaLarga%) do (
+    <nul set /p "=."
     timeout /t 1 >nul
-    goto combate
 )
+echo.
+echo ¡El pez ha picado! Pulsa R para recoger (tienes %esperaLarga% s).
 
-if %contador% GEQ %tiempo_limite% (
-    echo 🐠 El pez se ha escapado...
+:: ventana de reacción
+set "enganchado=0"
+for /l %%i in (1,1,%esperaLarga%) do (
+    choice /C RN /N /T 1 /D N >nul
+    if errorlevel 2 (
+        rem nada
+    ) else (
+        set "enganchado=1"
+        goto comienzo_pelea
+    )
+)
+if "%enganchado%"=="0" (
+    echo.
+    echo ❌ No pulsaste R a tiempo. El pez se escapó.
     timeout /t 2 >nul
-    goto inicio
+    goto menu
 )
-goto reaccion
 
-:combate
+:comienzo_pelea
 cls
-echo ⚔️  El combate comienza...
-timeout /t 2 >nul
+echo 🎣 ¡Has enganchado! Comienza el combate (5 niveles)...
+timeout /t 1 >nul
 
 set /a nivel=1
 set /a maxniveles=5
 
-:loop_niveles
-if %nivel% GTR %maxniveles% goto capturado
+:nivel_loop
+if %nivel% GTR %maxniveles% goto captura_exitosa
 
-set /a espera_tiron=%random% %% 9 + 2
+:: generar tiempo del nivel entre 2 y 10 s
+set /a esperaNivel=%random% %% 9 + 2
+
 cls
 echo ===============================
 echo Nivel %nivel% de %maxniveles%
 echo ===============================
 echo El pez está tirando...
-set /a contador=0
 
-:tiron
-set /a contador+=1
-choice /C RN /N /T 1 /D N >nul
-set choice_error=%errorlevel%
-
-if %choice_error%==1 (
-    echo 💥 El pez ha roto el hilo por impaciencia.
-    timeout /t 2 >nul
-    goto inicio
+:: etapa 1: mientras tira (si pulsas R aquí -> hilo roto)
+set "rompio=0"
+for /l %%t in (1,1,%esperaNivel%) do (
+    <nul set /p "=."
+    choice /C RN /N /T 1 /D N >nul
+    if errorlevel 2 (
+        rem nada
+    ) else (
+        set "rompio=1"
+        goto hilo_roto
+    )
 )
+if "%rompio%"=="1" goto hilo_roto
 
-if %contador% GEQ %espera_tiron% goto cansado
-goto tiron
-
-:cansado
 echo.
-echo El pez está cansado. Pulsa R para recoger el hilo.
-set /a contador=0
+echo El pez está cansado. Pulsa R para recoger el hilo!
 
-:ventana
-set /a contador+=1
-choice /C RN /N /T 1 /D N >nul
-set choice_error=%errorlevel%
-
-if %choice_error%==1 (
-    echo ⬆️  Recogiste el hilo correctamente.
-    timeout /t 1 >nul
-    set /a nivel+=1
-    goto loop_niveles
+:: etapa 2: oportunidad de recoger
+set "reaccionado=0"
+for /l %%t in (1,1,%esperaNivel%) do (
+    choice /C RN /N /T 1 /D N >nul
+    if errorlevel 2 (
+        rem sigue
+    ) else (
+        set "reaccionado=1"
+        echo ⬆️  Has recogido el hilo de este nivel.
+        timeout /t 1 >nul
+        goto siguiente_nivel
+    )
 )
-
-if %contador% GEQ %espera_tiron% (
-    echo 🐠 El pez se ha escapado...
+if "%reaccionado%"=="0" (
+    echo ❌ No recogiste a tiempo. El pez se escapó.
     timeout /t 2 >nul
-    goto inicio
+    goto menu
 )
-goto ventana
 
-:capturado
+:hilo_roto
+echo.
+echo ❌ Pulsaste R durante el tirón. El hilo se ha roto.
+timeout /t 2 >nul
+goto menu
+
+:siguiente_nivel
+set /a nivel+=1
+goto nivel_loop
+
+:captura_exitosa
 cls
-set /a size=%random% %% 116 + 5
-echo 🏆 ¡Has capturado un pez de %size% cm!
+
+:: elegir pez aleatorio correctamente
+set /a index=%random% %% 20 + 1
+set /a i=0
+for %%a in (%peces%) do (
+    set /a i+=1
+    if !i! EQU %index% set "pez=%%a"
+)
+set /a tamano=%random% %% 80 + 20
+
+echo 🏆 ¡Has capturado un %pez:_= % de %tamano% cm!
 echo.
-choice /C SN /N /M "¿Quieres seguir pescando? (S/N): " >nul
-if errorlevel 2 exit /b 0
-goto inicio
+call :mostrar_ascii "%pez%"
+echo.
+echo --------------------------------------------
+set /p "=Presiona ENTER para volver al menú..." <nul
+pause >nul
+goto menu
+
+:mostrar_ascii
+setlocal EnableDelayedExpansion
+set "pez=%~1"
+set "clave=%pez: =_%"
+for /f "tokens=2 delims==" %%A in ('set ascii_ 2^>nul ^| findstr /i /c:"ascii_%clave%="') do (
+    echo %%A
+)
+endlocal
+exit /b
