@@ -3,6 +3,9 @@ setlocal EnableDelayedExpansion
 title 🎣 Pesca Aventura
 color 0A
 
+:: Archivo donde se guardarán las capturas codificadas
+set "logfile=pesca.dat"
+
 :: Lista de peces (20 especies)
 set "peces=Trucha_arcoíris Carpa_dorada Pez_gato Tiburón_azul Pez_espada Pez_globo Dorado Atún_rojo Salmón_rosado Bagre Lenguado Mero Pez_loro Robalo Pez_payaso Esturión Pez_ángel Bacalao Pez_león Perca"
 
@@ -36,10 +39,13 @@ echo ============================================
 echo.
 echo  [1] Comenzar partida
 echo  [2] Salir
+echo  [3] Ver colección de peces
+echo ============================================
 echo.
 set /p "opcion=Selecciona una opción: "
 if "%opcion%"=="1" goto jugar
 if "%opcion%"=="2" exit /b
+if "%opcion%"=="3" goto ver_coleccion
 goto menu
 
 :jugar
@@ -157,6 +163,20 @@ echo 🏆 ¡Has capturado un %pez:_= % de %tamano% cm!
 echo.
 call :mostrar_ascii "%pez%"
 echo.
+:: Guardar captura usando certutil
+set "tempfile=%temp%\pesca_temp.txt"
+echo %pez:_= % - %tamano% cm> "%tempfile%"
+if exist "%logfile%" (
+    :: decodificar log existente
+    certutil -decode "%logfile%" "%tempfile%.dec" >nul 2>nul
+    type "%tempfile%.dec" >> "%tempfile%"
+    del "%tempfile%.dec"
+)
+:: codificar todo nuevamente
+certutil -encode "%tempfile%" "%logfile%" >nul
+del "%tempfile%"
+echo Guardado en la colección de manera segura.
+echo.
 echo --------------------------------------------
 set /p "=Presiona ENTER para volver al menú..." <nul
 pause >nul
@@ -171,3 +191,29 @@ for /f "tokens=2 delims==" %%A in ('set ascii_ 2^>nul ^| findstr /i /c:"ascii_%c
 )
 endlocal
 exit /b
+
+:ver_coleccion
+cls
+echo ============================================
+echo           🎣 Colección de Peces
+echo ============================================
+echo.
+
+if not exist "%logfile%" (
+    echo Aún no has pescado ningún pez.
+    echo.
+    pause
+    goto menu
+)
+
+:: decodificar temporalmente para mostrar
+set "tempfile=%temp%\pesca_ver.txt"
+certutil -decode "%logfile%" "%tempfile%" >nul 2>nul
+type "%tempfile%"
+del "%tempfile%"
+
+echo.
+echo --------------------------------------------
+set /p "=Presiona ENTER para volver al menú..." <nul
+pause >nul
+goto menu
